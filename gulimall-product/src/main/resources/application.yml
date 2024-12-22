@@ -1,0 +1,48 @@
+server:
+  port: 10111
+  servlet:
+    session:
+      timeout: 30m
+logging:
+  level:
+    com.xunqi.gulimall: debug
+#  TRACE：最详细的日志信息，通常用于开发和调试阶段。
+#  DEBUG：调试信息，用于开发过程中输出详细的信息。
+#  INFO：一般信息，用于记录应用程序的正常运行状态。
+#  WARN：警告信息，表示潜在的问题，但不会影响应用程序的正常运行。
+#  ERROR：错误信息，表示应用程序遇到了错误，但仍然可以继续运行。
+#  FATAL：严重错误信息，表示应用程序无法继续运行，必须停止。
+
+spring:
+  datasource:
+    username: root
+    password: qazx9855
+    url: jdbc:mysql://localhost:3306/gulimall_pms?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    alicloud:
+      access-key: LTAI5tFzPYjq3eGNxHxR6NEM
+      secret-key: bZkf7tv9t8L5BjmFCQZgMHX7mUsKGn
+      oss:
+        endpoint: oss-cn-beijing.aliyuncs.com
+
+
+
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  global-config:
+    db-config:
+      #      自增主键
+      id-type: auto
+#      逻辑删除规则（可以省略）
+      logic-delete-value: 1 #已删除
+      logic-not-delete-value: 0 #未删除
+
+
+
+
+

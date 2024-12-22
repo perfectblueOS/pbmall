@@ -1,0 +1,17 @@
+# 配置Spring Cloud Nacos的相关属性
+spring:
+  cloud:
+    nacos:
+      config:
+        # 指定Nacos服务器的地址
+        server-addr: localhost:8848
+        # 定义命名空间，用于隔离配置
+        namespace: 85b8455a-6d55-4543-a318-51b19c21a8fd
+        # 配置外部配置源的第一个数据源
+        ext-config[0]:
+          # 指定配置的数据ID
+          data-id: oss.yml
+          # 指定配置所属的组
+          group: DEFAULT_GROUP
+          # 开启配置的动态刷新功能
+          refresh: true

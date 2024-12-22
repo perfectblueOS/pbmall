@@ -1,0 +1,29 @@
+spring:
+  cloud:
+    gateway:
+      routes:  # 定义路由规则的列表
+        - id: product_route
+          uri: lb://gulimall-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - RewritePath=/api/(?<segment>.*),/$\{segment}
+
+        - id: third-party-route
+          uri: lb://gulimall-third-party
+          predicates:
+            - Path=/api/thirdparty/**
+          filters:
+            - RewritePath=/api/thirdparty/(?<segment>.*),/$\{segment}
+
+        - id: admin_route  # 当前路由的唯一标识符
+          uri: lb://renren-fast  # 目标服务的URI，lb:// 表示使用负载均衡方式路由到服务
+          predicates:  # 定义路由的断言集合，决定请求是否匹配该路由
+            - Path=/api/**  # Path断言，匹配以/api/开头的请求路径
+          filters:  # 定义应用于路由的过滤器列表，对请求或响应进行处理
+            - RewritePath=/api/(?<segment>.*),/renren-fast/$\{segment}  # 重写路径过滤器，捕获/api/后的路径并重写为/${segment}
+
+
+
+
+
