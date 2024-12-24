@@ -38,6 +38,8 @@ public class GulimallProductApplicationTests {
     //引入starter以后，可以自动注入
     @Autowired
     private OSS ossClient;
+    @Autowired
+    private CategoryService categoryService;
 
 //
 //    @Resource
@@ -84,12 +86,12 @@ public class GulimallProductApplicationTests {
 //        System.out.println("之前保存的数据:"+hello);
 //    }
 //
-//    @Test
-//    public void testFindPath() {
-//        Long[] catelogPath = categoryService.findCatelogPath(225l);
-//
-//        log.info("完整路径catelogPath={}", Arrays.asList(catelogPath));
-//    }
+    @Test
+    public void testFindPath() {
+        Long[] catelogPath = categoryService.findCatelogPath(225l);
+
+        log.info("完整路径catelogPath={}", Arrays.asList(catelogPath));
+    }
 //
 //    @Test
 //    public void testUpload() throws FileNotFoundException {

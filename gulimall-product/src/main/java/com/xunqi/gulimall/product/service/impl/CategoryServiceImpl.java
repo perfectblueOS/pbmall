@@ -69,7 +69,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         //使用递归算法查找所有父节点
         List<Long> parentPath = findParentPath(catelogId, paths);
         //查找的父节点路径是从大到小排列的，需要反转
-        return (Long[]) paths.toArray();
+        return paths.toArray(new Long[parentPath.size()]);
     }
 
     /**
