@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xunqi.gulimall.product.dao.BrandDao;
 import com.xunqi.gulimall.product.entity.BrandEntity;
 import com.xunqi.gulimall.product.service.BrandService;
+import org.springframework.util.StringUtils;
 
 
 @Service("brandService")
@@ -20,9 +21,19 @@ public class BrandServiceImpl extends ServiceImpl<BrandDao, BrandEntity> impleme
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+
+        String key = (String) params.get("key");
+        QueryWrapper<BrandEntity> queryWrapper = new QueryWrapper<>();
+        if (!StringUtils.isEmpty(key)){
+            //id完全匹配，名字模糊匹配
+            queryWrapper.eq("brand_id",key).or().like("name",key);
+        }
+
         IPage<BrandEntity> page = this.page(
+                //拿到工具类提供的模板页
                 new Query<BrandEntity>().getPage(params),
-                new QueryWrapper<BrandEntity>()
+                //使用修饰好的queryWrapper进行查询
+                queryWrapper
         );
 
         return new PageUtils(page);
