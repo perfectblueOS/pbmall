@@ -2,6 +2,8 @@ package com.xunqi.gulimall.product.service.impl;
 
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
+import com.xunqi.gulimall.product.service.CategoryBrandRelationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,10 +20,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xunqi.gulimall.product.dao.CategoryDao;
 import com.xunqi.gulimall.product.entity.CategoryEntity;
 import com.xunqi.gulimall.product.service.CategoryService;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service("categoryService")
 public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity> implements CategoryService {
+
+    @Autowired
+    CategoryBrandRelationService categoryBrandRelationService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -70,6 +76,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         List<Long> parentPath = findParentPath(catelogId, paths);
         //查找的父节点路径是从大到小排列的，需要反转
         return paths.toArray(new Long[parentPath.size()]);
+    }
+
+    /**
+     * 更新类别（同步更新原表和关联表冗余数据）
+     * @param category 更新的类别
+     */
+    @Transactional//开启事务
+    @Override
+    public void updateCascade(CategoryEntity category) {
+        this.updateById(category);
+        categoryBrandRelationService.updateCategory(category.getCatId(),category.getName());
     }
 
     /**

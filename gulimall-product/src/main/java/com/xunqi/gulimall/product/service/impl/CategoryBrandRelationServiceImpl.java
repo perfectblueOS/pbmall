@@ -1,5 +1,6 @@
 package com.xunqi.gulimall.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
 import com.xunqi.gulimall.product.dao.BrandDao;
@@ -54,6 +55,27 @@ public class CategoryBrandRelationServiceImpl extends ServiceImpl<CategoryBrandR
         categoryBrandRelation.setCatelogName(categoryEntity.getName());
 
         this.save(categoryBrandRelation);
+    }
+
+    /**
+     * 更新关联表品牌的冗余字段数据
+     * @param brandId 新的品牌id
+     * @param name 新的品牌名
+     */
+    @Override
+    public void updateBrand(Long brandId, String name) {
+        CategoryBrandRelationEntity categoryBrandRelationEntity = new CategoryBrandRelationEntity();
+        categoryBrandRelationEntity.setBrandName(name);
+        categoryBrandRelationEntity.setBrandId(brandId);
+        this.update(categoryBrandRelationEntity,
+                new UpdateWrapper<CategoryBrandRelationEntity>()
+                        .eq("brand_id",brandId)
+        );
+    }
+
+    @Override
+    public void updateCategory(Long catId, String name) {
+        this.baseMapper.updateCategory(catId,name);
     }
 
 }

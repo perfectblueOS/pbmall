@@ -2,6 +2,8 @@ package com.xunqi.gulimall.product.service.impl;
 
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
+import com.xunqi.gulimall.product.service.CategoryBrandRelationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -18,7 +20,8 @@ import org.springframework.util.StringUtils;
 
 @Service("brandService")
 public class BrandServiceImpl extends ServiceImpl<BrandDao, BrandEntity> implements BrandService {
-
+    @Autowired
+    CategoryBrandRelationService categoryBrandRelationService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 
@@ -37,6 +40,17 @@ public class BrandServiceImpl extends ServiceImpl<BrandDao, BrandEntity> impleme
         );
 
         return new PageUtils(page);
+    }
+
+    @Override
+    public void updateDetail(BrandEntity brand) {
+        //更新原表的信息
+        this.updateById(brand);
+        //同步更新关联表的对应信息
+        if (!StringUtils.isEmpty(brand.getName())){
+            categoryBrandRelationService.updateBrand(brand.getBrandId(),brand.getName());
+        }
+    //TODO 更新其他关联信息
     }
 
 }
