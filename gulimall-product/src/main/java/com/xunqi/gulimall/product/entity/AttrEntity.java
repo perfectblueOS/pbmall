@@ -1,5 +1,6 @@
 package com.xunqi.gulimall.product.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -61,4 +62,11 @@ public class AttrEntity implements Serializable {
 	 */
 	private Integer showDesc;
 
+//	现在不推荐这么写，新建一个vo包
+//	VO ：
+//	value object值对象，封装数据。
+//	主要对应界面显示的数据对象。对于一个WEB页面，或者SWT、SWING的一个界面，用一个VO对象对应整个界面的值。
+//	通常用于业务层之间的数据传递
+//	@TableField(exist = false)
+//	private Long attrGroupId;
 }

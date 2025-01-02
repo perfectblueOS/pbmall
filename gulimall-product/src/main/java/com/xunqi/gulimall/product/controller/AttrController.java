@@ -6,6 +6,7 @@ import java.util.Map;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.R;
 //import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.xunqi.gulimall.product.vo.AttrVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,8 +61,8 @@ public class AttrController {
      */
     @RequestMapping("/save")
 //    @RequiresPermissions("product:attr:save")
-    public R save(@RequestBody AttrEntity attr){
-		attrService.save(attr);
+    public R save(@RequestBody AttrVo attr){
+		attrService.saveAttr(attr);
 
         return R.ok();
     }
