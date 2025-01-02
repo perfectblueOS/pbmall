@@ -62,26 +62,27 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
             防止 SQL 注入：MyBatis-Plus 内部会对参数进行处理，确保生成的 SQL 语句是安全的。
             支持多种数据库操作：不仅限于查询操作，还可以用于更新、删除等操作
          */
+        //拿到前端传入的搜索关键字
+        String key = (String) params.get("key");
+        //创建一个条件查询对象，并附加条件：catelog_id=catelogId
+        QueryWrapper<AttrGroupEntity> wrapper = new QueryWrapper<AttrGroupEntity>();
+        //如果有查询关键字
+        if(!StringUtils.isEmpty(key)){
+            //那么添加查询条件：attr_group_id=key 或 attr_group_name like key
+            wrapper.and((obj)->{
+                obj.eq("attr_group_id",key).or().like("attr_group_name",key);
+            });
+        }
         if(catelogId==0){
             //如果是一级分类，则查询所有属性分组
             //new Query<AttrGroupEntity>().getPage(params)：按照参数中的分页信息创建分页对象
             //new QueryWrapper<AttrGroupEntity>()：创建一个没有附加任何条件的查询条件对象，即查询所有
             IPage<AttrGroupEntity> page = this.page(new Query<AttrGroupEntity>().getPage(params),
-                    new QueryWrapper<AttrGroupEntity>());
+                    wrapper);
             return new PageUtils(page);
         }
         else {
-            //拿到前端传入的搜索关键字
-            String key = (String) params.get("key");
-            //创建一个条件查询对象，并附加条件：catelog_id=catelogId
-            QueryWrapper<AttrGroupEntity> wrapper = new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catelogId);
-            //如果有查询关键字
-            if(!StringUtils.isEmpty(key)){
-                //那么添加查询条件：attr_group_id=key 或 attr_group_name like key
-                wrapper.and((obj)->{
-                    obj.eq("attr_group_id",key).or().like("attr_group_name",key);
-                });
-            }
+            wrapper.eq("catelog_id",catelogId);
             IPage<AttrGroupEntity> page = this.page(new Query<AttrGroupEntity>().getPage(params),wrapper);
             return new PageUtils(page);
         }
