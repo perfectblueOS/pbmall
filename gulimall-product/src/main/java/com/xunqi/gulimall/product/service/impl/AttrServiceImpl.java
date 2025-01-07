@@ -1,6 +1,7 @@
 package com.xunqi.gulimall.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.xunqi.common.constant.ProductConstant;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
 import com.xunqi.gulimall.product.dao.AttrAttrgroupRelationDao;
@@ -62,27 +63,33 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         BeanUtils.copyProperties(attr,attrEntity);
         //保存基本数据
         this.save(attrEntity);
-        //保存关联关系
-        AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
-        //AttrGroupId是AttrVo独有的属性，前端会传过来，由vo接收
-        relationEntity.setAttrGroupId(attr.getAttrGroupId());
-        //关联属性的id
-        relationEntity.setAttrId(attrEntity.getAttrId());
-        //TODO 这里忘记了将关联对象持久化
-        //将关联对象持久化
-        relationDao.insert(relationEntity);
+        if (attr.getAttrType()== ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode()) {
+            //保存关联关系
+            AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
+            //AttrGroupId是AttrVo独有的属性，前端会传过来，由vo接收
+            relationEntity.setAttrGroupId(attr.getAttrGroupId());
+            //关联属性的id
+            relationEntity.setAttrId(attrEntity.getAttrId());
+            //TODO 这里忘记了将关联对象持久化
+            //将关联对象持久化
+            relationDao.insert(relationEntity);
+        }
     }
 
     /**
      * 分页查询商品信息
-     * @param params 前端传的各种参数
+     *
+     * @param params    前端传的各种参数
      * @param catelogId 指定类别查询
+     * @param type
      * @return
      */
     @Override
-    public PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId) {
-        //新建查询对象
-        QueryWrapper<AttrEntity> queryWrapper = new QueryWrapper<>();
+    public PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId, String type) {
+        //新建查询对象，注意这里加上了对于销售属性类型的判断
+        QueryWrapper<AttrEntity> queryWrapper = new QueryWrapper<AttrEntity>()
+                .eq("attr_type","base"
+                        .equalsIgnoreCase(type)?ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode():ProductConstant.AttrEnum.ATTR_TYPE_SALE.getCode());
         //前端传入的catelogId=0表示全部查询
         //如果不等于0，那么按照指定的类别查询
         if(catelogId!=0){
@@ -112,18 +119,22 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
             AttrRespVo attrRespVo = new AttrRespVo();
             //将attrEntity与attrRespVo的每一个相同属性（也就是除了categoryName和GroupName）拷贝到attrRespVo中
             BeanUtils.copyProperties(attrEntity, attrRespVo);
-            //接下来添加剩余的两个属性
+            //接下来添加剩余的两个属性（分类和分组）
             //从attr和attrGroup的关联表中拿到关联信息
-            AttrAttrgroupRelationEntity attrId = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attrEntity.getAttrId()));
-            if (attrId != null) { //找到对应信息
-                //从拿到的关联信息中取得attr对应的attrGroupId信息
-                Long attrGroupId = attrId.getAttrGroupId();
-                //根据attrGroupId拿到对应的分组信息
-                AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrGroupId);
-                //从对应的分组信息中拿到组名，并在attrRespVo中设置
-                attrRespVo.setGroupName(attrGroupEntity.getAttrGroupName());
-            }
-            //根据前端传过来的商品属性拿到所属商品类别id，再根据id拿到对应的分类信息
+                    //如果该属性是基本属性才去拿分组信息，因为销售属性是没有分组信息的
+                    if ("base".equalsIgnoreCase(type)) {
+                        AttrAttrgroupRelationEntity attrId = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attrEntity.getAttrId()));
+                        if (attrId != null) { //找到对应信息
+                            //从拿到的关联信息中取得attr对应的attrGroupId信息
+                            Long attrGroupId = attrId.getAttrGroupId();
+                            //根据attrGroupId拿到对应的分组信息
+                            AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrGroupId);
+                            //从对应的分组信息中拿到组名，并在attrRespVo中设置
+                            attrRespVo.setGroupName(attrGroupEntity.getAttrGroupName());
+                        }
+                    }
+
+                    //根据前端传过来的商品属性拿到所属商品类别id，再根据id拿到对应的分类信息
             CategoryEntity categoryEntity = categoryDao.selectById(attrEntity.getCatelogId());
             if (categoryEntity != null) {//成功拿到
                 //获取分类名并设置到attrRespVo中
@@ -148,19 +159,22 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         AttrEntity attrEntity = this.getById(attrId);
         BeanUtils.copyProperties(attrEntity,respVo);
 
-        //设置分组信息
-        //根据商品属性id查询到对应的属性属性和分组关联对象
-        AttrAttrgroupRelationEntity attrgroupRelation = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>()
-                .eq("attr_id", attrId));
-        if(attrgroupRelation!=null){//注意查询值的非空判断，避免报NPE
-            //从关联对象中查询到商品所属的分组id，并设置到返回对象中
-            respVo.setAttrGroupId(attrgroupRelation.getAttrGroupId());
-            //通过查询到的分组id查询到对应的分组对象
-            //TODO 是否可以简化，将attrgroupRelation.getAttrGroupId()封装起来
-            AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrgroupRelation.getAttrGroupId());
-            if(attrGroupEntity!=null){//非空判断
-                //将查询到的分组对象的分组名设置到返回对象中
-                respVo.setGroupName(attrGroupEntity.getAttrGroupName());
+        //只有当商品属性为基本属性的时候才设置分组信息
+        if (attrEntity.getAttrType() == ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode()) {
+            //设置分组信息
+            //根据商品属性id查询到对应的属性属性和分组关联对象
+            AttrAttrgroupRelationEntity attrgroupRelation = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>()
+                    .eq("attr_id", attrId));
+            if(attrgroupRelation!=null){//注意查询值的非空判断，避免报NPE
+                //从关联对象中查询到商品所属的分组id，并设置到返回对象中
+                respVo.setAttrGroupId(attrgroupRelation.getAttrGroupId());
+                //通过查询到的分组id查询到对应的分组对象
+                //TODO 是否可以简化，将attrgroupRelation.getAttrGroupId()封装起来
+                AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrgroupRelation.getAttrGroupId());
+                if(attrGroupEntity!=null){//非空判断
+                    //将查询到的分组对象的分组名设置到返回对象中
+                    respVo.setGroupName(attrGroupEntity.getAttrGroupName());
+                }
             }
         }
 
@@ -195,22 +209,25 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         //写操作1
         this.updateById(attrEntity);
 
-        //创建商品及分组关联关系对象，对商品和商品分组的id进行赋值
-        AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
-        relationEntity.setAttrId(attrEntity.getAttrId());
-        relationEntity.setAttrGroupId(attr.getAttrGroupId());
+        //只有当商品属性为基本属性的时候才设置分组信息
+        if (attrEntity.getAttrType() == ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode()) {
+            //创建商品及分组关联关系对象，对商品和商品分组的id进行赋值
+            AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
+            relationEntity.setAttrId(attrEntity.getAttrId());
+            relationEntity.setAttrGroupId(attr.getAttrGroupId());
 
-        //验证该商品的类别是否存在（商品是否已被分类）
-        Integer count = relationDao.selectCount(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attr.getAttrId()));
-        if(count>0){//已被分类
-            //写操作2
-            //找到该商品的关系记录，并使用relationEntity中的字段值来更新商品和分组记录。
-            relationDao.update(relationEntity,new UpdateWrapper<AttrAttrgroupRelationEntity>().eq("attr_id",attr.getAttrId()));
-        }
-        else {//还未被分类
-            //写操作2
-            //加入商品与分组的关联关系
-            relationDao.insert(relationEntity);
+            //验证该商品的类别是否存在（商品是否已被分类）
+            Integer count = relationDao.selectCount(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attr.getAttrId()));
+            if(count>0){//已被分类
+                //写操作2
+                //找到该商品的关系记录，并使用relationEntity中的字段值来更新商品和分组记录。
+                relationDao.update(relationEntity,new UpdateWrapper<AttrAttrgroupRelationEntity>().eq("attr_id",attr.getAttrId()));
+            }
+            else {//还未被分类
+                //写操作2
+                //加入商品与分组的关联关系
+                relationDao.insert(relationEntity);
+            }
         }
     }
 

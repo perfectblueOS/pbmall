@@ -3,8 +3,6 @@ package com.xunqi.common.constant;
 /**
  * @Description: 商品常量属性
  * @Created: with IntelliJ IDEA.
- * @author: 夏沫止水
- * @createTime: 2020-05-29 16:23
  **/
 public class ProductConstant {
 
