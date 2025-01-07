@@ -19,4 +19,8 @@ public class AttrRespVo extends AttrVo {
      * 商品所属分组名
      */
     private String groupName;
+    /**
+     * 商品所属的品牌路径
+     */
+    private Long[] catelogPath;
 }

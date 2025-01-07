@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.gulimall.product.entity.AttrEntity;
+import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
 
 import java.util.Map;
@@ -22,5 +23,7 @@ public interface AttrService extends IService<AttrEntity> {
     void saveAttr(AttrVo attr);
 
     PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId);
+
+    AttrRespVo getAttrInfo(Long attrId);
 }
 

@@ -8,6 +8,7 @@ import com.xunqi.gulimall.product.dao.CategoryDao;
 import com.xunqi.gulimall.product.entity.AttrAttrgroupRelationEntity;
 import com.xunqi.gulimall.product.entity.AttrGroupEntity;
 import com.xunqi.gulimall.product.entity.CategoryEntity;
+import com.xunqi.gulimall.product.service.CategoryService;
 import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
 import org.springframework.beans.BeanUtils;
@@ -39,6 +40,8 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
     AttrGroupDao attrGroupDao;
     @Autowired
     CategoryDao categoryDao;
+    @Autowired
+    CategoryService categoryService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -126,6 +129,51 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         //设置页面要展示的商品属性列表
         pageUtils.setList(respVos);
         return pageUtils;
+    }
+
+    /**
+     * 查询商品属性
+     * @param attrId 商品id
+     * @return 商品属性
+     */
+    @Override
+    public AttrRespVo getAttrInfo(Long attrId) {
+        //根据商品id查到对应的商品属性，将查到的商品属性封装到传回给前端的Vo中
+        AttrRespVo respVo = new AttrRespVo();
+        AttrEntity attrEntity = this.getById(attrId);
+        BeanUtils.copyProperties(attrEntity,respVo);
+
+        //设置分组信息
+        //根据商品属性id查询到对应的属性属性和分组关联对象
+        AttrAttrgroupRelationEntity attrgroupRelation = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>()
+                .eq("attr_id", attrId));
+        if(attrgroupRelation!=null){//注意查询值的非空判断，避免报NPE
+            //从关联对象中查询到商品所属的分组id，并设置到返回对象中
+            respVo.setAttrGroupId(attrgroupRelation.getAttrGroupId());
+            //通过查询到的分组id查询到对应的分组对象
+            //TODO 是否可以简化，将attrgroupRelation.getAttrGroupId()封装起来
+            AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrgroupRelation.getAttrGroupId());
+            if(attrGroupEntity!=null){//非空判断
+                //将查询到的分组对象的分组名设置到返回对象中
+                respVo.setGroupName(attrGroupEntity.getAttrGroupName());
+            }
+        }
+
+        //设置分类信息
+        //拿到商品属性中的商品分类id
+        Long catelogId = attrEntity.getCatelogId();
+        //根据商品分类id，查到分类路径
+        Long[] catelogPath = categoryService.findCatelogPath(catelogId);
+        //将分类路径设置到返回对象中
+        respVo.setCatelogPath(catelogPath);
+        //根据商品分类id查到对应的分类信息
+        CategoryEntity categoryEntity = categoryDao.selectById(catelogId);
+        if (categoryEntity!=null) {//非空判断
+            //将分类的名字设置到返回对象中
+            respVo.setCatelogName(categoryEntity.getName());
+        }
+
+        return respVo;
     }
 
 }
