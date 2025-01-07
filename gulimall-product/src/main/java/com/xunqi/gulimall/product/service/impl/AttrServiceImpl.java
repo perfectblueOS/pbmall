@@ -1,5 +1,6 @@
 package com.xunqi.gulimall.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
 import com.xunqi.gulimall.product.dao.AttrAttrgroupRelationDao;
@@ -28,6 +29,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xunqi.gulimall.product.dao.AttrDao;
 import com.xunqi.gulimall.product.entity.AttrEntity;
 import com.xunqi.gulimall.product.service.AttrService;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 
@@ -177,6 +179,39 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         }
 
         return respVo;
+    }
+
+    /**
+     * 对商品属性进行更新
+     * @param attr 前端传的更新信息
+     */
+    @Transactional//开启事务，当两个写操作有一个及以上执行失败时回滚
+    @Override
+    public void updateAttr(AttrVo attr) {
+        //创建商品属性对象，将前端传过来的商品更改信息（vo）复制到这个对象里
+        //新建的原因是updateById(attrEntity)操作只能接受attrEntity
+        AttrEntity attrEntity = new AttrEntity();
+        BeanUtils.copyProperties(attr,attrEntity);
+        //写操作1
+        this.updateById(attrEntity);
+
+        //创建商品及分组关联关系对象，对商品和商品分组的id进行赋值
+        AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
+        relationEntity.setAttrId(attrEntity.getAttrId());
+        relationEntity.setAttrGroupId(attr.getAttrGroupId());
+
+        //验证该商品的类别是否存在（商品是否已被分类）
+        Integer count = relationDao.selectCount(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attr.getAttrId()));
+        if(count>0){//已被分类
+            //写操作2
+            //找到该商品的关系记录，并使用relationEntity中的字段值来更新商品和分组记录。
+            relationDao.update(relationEntity,new UpdateWrapper<AttrAttrgroupRelationEntity>().eq("attr_id",attr.getAttrId()));
+        }
+        else {//还未被分类
+            //写操作2
+            //加入商品与分组的关联关系
+            relationDao.insert(relationEntity);
+        }
     }
 
 }
