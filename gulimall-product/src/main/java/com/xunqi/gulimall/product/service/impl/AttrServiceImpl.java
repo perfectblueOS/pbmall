@@ -66,6 +66,9 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         relationEntity.setAttrGroupId(attr.getAttrGroupId());
         //关联属性的id
         relationEntity.setAttrId(attrEntity.getAttrId());
+        //TODO 这里忘记了将关联对象持久化
+        //将关联对象持久化
+        relationDao.insert(relationEntity);
     }
 
     /**
