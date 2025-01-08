@@ -6,6 +6,7 @@ import java.util.Map;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.R;
 //import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
 import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,7 @@ public class AttrController {
 
         return R.ok();
     }
+
 
     /**
      * 修改

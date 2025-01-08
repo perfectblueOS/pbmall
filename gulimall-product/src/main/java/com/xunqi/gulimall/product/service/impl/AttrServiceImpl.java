@@ -11,12 +11,15 @@ import com.xunqi.gulimall.product.entity.AttrAttrgroupRelationEntity;
 import com.xunqi.gulimall.product.entity.AttrGroupEntity;
 import com.xunqi.gulimall.product.entity.CategoryEntity;
 import com.xunqi.gulimall.product.service.CategoryService;
+import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
 import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -230,5 +233,95 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
             }
         }
     }
+
+    /**
+     * 根据分组id查找关联的所有商品属性
+     * @param attrgroupId 商品分组id
+     * @return 商品分组对应的所有商品信息列表
+     */
+    @Override
+    public List<AttrEntity> getRelationAttr(Long attrgroupId) {
+        //查询所有分组id为attrgroupId的商品组关联信息
+        List<AttrAttrgroupRelationEntity> entities = relationDao.selectList(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_group_id", attrgroupId));
+        //将关联信息里的所有商品id取出来成为一个集合，也就是找出该分组的所有商品id
+        List<Long> attrIds = entities
+                .stream()
+                //TODO 这里替换为了方法引用写法，待测试
+                .map(AttrAttrgroupRelationEntity::getAttrId)
+                .collect(Collectors.toList());
+        if(attrIds==null||attrIds.size()==0){
+            return null;
+        }
+        //根据商品id列表拿到对应商品属性的列表
+        Collection<AttrEntity> attrEntities = this.listByIds(attrIds);
+        //父转子
+        return (List<AttrEntity>) attrEntities;
+    }
+
+    @Override
+    public void deleteRelation(AttrGroupRelationVo[] vos) {
+        //这种方式不能实现批量删除，额外写一个批量删除的语句
+//        relationDao.delete(new QueryWrapper<>().eq("attr_id"))...
+        //将前端传来的vo列表封装为List集合进行流式处理
+        List<AttrAttrgroupRelationEntity> entities = Arrays.asList(vos)
+                .stream()
+                .map((item) -> {
+                    //将前端传来的vo中的商品id和商品分组id拷贝到关系对象中
+                    //原因是只有关系对象对应了数据库中的属性，需要转换进行连接
+                    AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
+                    BeanUtils.copyProperties(item, relationEntity);
+                    return relationEntity;
+                })
+                .collect(Collectors.toList());
+        //这里额外写一个批量删除的方法，利用xml配置
+        relationDao.deleteBatchRelation(entities);
+    }
+
+    /**
+     * 获取指定分类目录下未被当前属性组关联的商品属性列表
+     *
+     * @param params 分页及查询参数，包含页码、每页数量和查询关键字(key)
+     * @param attrgroupId 当前属性组ID
+     * @return 分页数据对象，包含属性列表及分页信息
+     */
+    @Override
+    public PageUtils getNoRelationAttr(Map<String, Object> params, Long attrgroupId) {
+        // 获取当前属性组所属的分类目录ID
+        AttrGroupEntity attrGroupEntity = attrGroupDao.selectById(attrgroupId);
+        Long catelogId = attrGroupEntity.getCatelogId();
+
+        // 获取同分类目录下的所有属性组ID集合
+        List<AttrGroupEntity> attrGroupEntities = attrGroupDao.selectList(
+            new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catelogId));
+        List<Long> collect = attrGroupEntities.stream()
+            .map(AttrGroupEntity::getAttrGroupId)
+            .collect(Collectors.toList());
+
+        // 获取所有已关联到这些属性组的属性ID集合
+        List<AttrAttrgroupRelationEntity> attrGroupId = relationDao.selectList(
+            new QueryWrapper<AttrAttrgroupRelationEntity>().in("attr_group_id")); // 注意：此处代码可能需要指定具体字段值
+        List<Long> attrIds = attrGroupId.stream()
+            .map(AttrAttrgroupRelationEntity::getAttrId)
+            .collect(Collectors.toList());
+
+        // 构建查询条件：同分类目录下且未关联的属性
+        QueryWrapper<AttrEntity> attrEntityQueryWrapper = new QueryWrapper<AttrEntity>()
+            .eq("catelog_id", catelogId);
+        if(attrIds != null && !attrIds.isEmpty()){
+            attrEntityQueryWrapper.notIn("attr_id", attrIds);
+        }
+
+        // 添加关键字查询条件（ID精确匹配或名称模糊匹配）
+        String key = (String) params.get("key");
+        if(!StringUtils.isEmpty(key)){
+            attrEntityQueryWrapper.and(w ->
+                w.eq("attr_id", key).or().like("attr_name", key));
+        }
+
+        // 执行分页查询并返回结果
+        IPage<AttrEntity> page = this.page(new Query<AttrEntity>().getPage(params), attrEntityQueryWrapper);
+        return new PageUtils(page);
+    }
+
 
 }
