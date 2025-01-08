@@ -11,12 +11,15 @@ import com.xunqi.gulimall.product.entity.AttrAttrgroupRelationEntity;
 import com.xunqi.gulimall.product.entity.AttrGroupEntity;
 import com.xunqi.gulimall.product.entity.CategoryEntity;
 import com.xunqi.gulimall.product.service.CategoryService;
+import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
 import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -229,6 +232,46 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
                 relationDao.insert(relationEntity);
             }
         }
+    }
+
+    /**
+     * 根据分组id查找关联的所有商品属性
+     * @param attrgroupId 商品分组id
+     * @return 商品分组对应的所有商品信息列表
+     */
+    @Override
+    public List<AttrEntity> getRelationAttr(Long attrgroupId) {
+        //查询所有分组id为attrgroupId的商品组关联信息
+        List<AttrAttrgroupRelationEntity> entities = relationDao.selectList(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_group_id", attrgroupId));
+        //将关联信息里的所有商品id取出来成为一个集合，也就是找出该分组的所有商品id
+        List<Long> attrIds = entities
+                .stream()
+                //TODO 这里替换为了方法引用写法，待测试
+                .map(AttrAttrgroupRelationEntity::getAttrId)
+                .collect(Collectors.toList());
+        //根据商品id列表拿到对应商品属性的列表
+        Collection<AttrEntity> attrEntities = this.listByIds(attrIds);
+        //父转子
+        return (List<AttrEntity>) attrEntities;
+    }
+
+    @Override
+    public void deleteRelation(AttrGroupRelationVo[] vos) {
+        //这种方式不能实现批量删除，额外写一个批量删除的语句
+//        relationDao.delete(new QueryWrapper<>().eq("attr_id"))...
+        //将前端传来的vo列表封装为List集合进行流式处理
+        List<AttrAttrgroupRelationEntity> entities = Arrays.asList(vos)
+                .stream()
+                .map((item) -> {
+                    //将前端传来的vo中的商品id和商品分组id拷贝到关系对象中
+                    //原因是只有关系对象对应了数据库中的属性，需要转换进行连接
+                    AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
+                    BeanUtils.copyProperties(item, relationEntity);
+                    return relationEntity;
+                })
+                .collect(Collectors.toList());
+        //这里额外写一个批量删除的方法，利用xml配置
+        relationDao.deleteBatchRelation(entities);
     }
 
 }
