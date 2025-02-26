@@ -8,6 +8,7 @@ import java.util.Map;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.R;
 import com.xunqi.gulimall.product.entity.AttrEntity;
+import com.xunqi.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xunqi.gulimall.product.service.AttrService;
 import com.xunqi.gulimall.product.service.CategoryService;
 import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
@@ -33,6 +34,13 @@ public class AttrGroupController {
     private CategoryService categoryService;
     @Autowired
     private AttrService attrService;
+    @Autowired
+    AttrAttrgroupRelationService attrAttrgroupRelationService;
+
+    public R addRelation(@RequestBody List<AttrGroupRelationVo> vos){
+        attrAttrgroupRelationService.saveBatch(vos);
+        return R.ok();
+    }
 
     /**
      *获取当前商品分组的所有商品属性

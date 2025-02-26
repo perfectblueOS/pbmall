@@ -66,7 +66,7 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         BeanUtils.copyProperties(attr,attrEntity);
         //保存基本数据
         this.save(attrEntity);
-        if (attr.getAttrType()== ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode()) {
+        if (attr.getAttrType()== ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode() &&attr.getAttrGroupId()!=null) {
             //保存关联关系
             AttrAttrgroupRelationEntity relationEntity = new AttrAttrgroupRelationEntity();
             //AttrGroupId是AttrVo独有的属性，前端会传过来，由vo接收
@@ -126,8 +126,9 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
             //从attr和attrGroup的关联表中拿到关联信息
                     //如果该属性是基本属性才去拿分组信息，因为销售属性是没有分组信息的
                     if ("base".equalsIgnoreCase(type)) {
+                        //TODO selectOne方法用于执行一个查询操作，并返回一个单一结果。通常用于查询结果只有一个值的情况，例如查询一个唯一的记录或者查询某个特定条件下的单一结果。当查询结果为多个值或者为空时，selectOne方法会抛出异常
                         AttrAttrgroupRelationEntity attrId = relationDao.selectOne(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attrEntity.getAttrId()));
-                        if (attrId != null) { //找到对应信息
+                        if (attrId != null && attrId.getAttrGroupId()!=null) { //找到对应信息
                             //从拿到的关联信息中取得attr对应的attrGroupId信息
                             Long attrGroupId = attrId.getAttrGroupId();
                             //根据attrGroupId拿到对应的分组信息
