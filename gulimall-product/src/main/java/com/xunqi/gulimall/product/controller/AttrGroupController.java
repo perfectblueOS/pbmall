@@ -12,6 +12,7 @@ import com.xunqi.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xunqi.gulimall.product.service.AttrService;
 import com.xunqi.gulimall.product.service.CategoryService;
 import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
+import com.xunqi.gulimall.product.vo.AttrGroupWithAttrsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +41,12 @@ public class AttrGroupController {
     public R addRelation(@RequestBody List<AttrGroupRelationVo> vos){
         attrAttrgroupRelationService.saveBatch(vos);
         return R.ok();
+    }
+
+    @GetMapping("/{catelogId}/withattr")
+    public R getAttrGroupWithAttrs(@PathVariable("catelogId") Long catelogId){
+        List<AttrGroupWithAttrsVo> vos = attrGroupService.getAttrGroupWithAttrsByCatelogId(catelogId);
+        return R.ok().put("data",vos);
     }
 
     /**
