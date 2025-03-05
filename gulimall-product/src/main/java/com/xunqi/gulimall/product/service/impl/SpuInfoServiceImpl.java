@@ -1,8 +1,12 @@
 package com.xunqi.gulimall.product.service.impl;
 
+import com.xunqi.common.to.SkuReductionTo;
+import com.xunqi.common.to.SpuBoundTo;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
+import com.xunqi.common.utils.R;
 import com.xunqi.gulimall.product.entity.*;
+import com.xunqi.gulimall.product.feign.CouponFeignService;
 import com.xunqi.gulimall.product.service.*;
 import com.xunqi.gulimall.product.vo.*;
 import org.springframework.beans.BeanUtils;
@@ -41,6 +45,8 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     SkuImagesService skuImagesService;
     @Autowired
     SkuSaleAttrValueService skuSaleAttrValueService;
+    @Autowired
+    CouponFeignService couponFeignService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -85,6 +91,16 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             return valueEntity;
         }).collect(Collectors.toList());
         productAttrValueService.saveProductAttr(collect);
+
+        Bounds bounds = vo.getBounds();
+        SpuBoundTo spuBoundTo = new SpuBoundTo();
+        BeanUtils.copyProperties(bounds,spuBoundTo);
+        spuBoundTo.setSpuId(infoEntity.getId());
+        R r = couponFeignService.saveSpuBounds(spuBoundTo);
+        if(r.getCode()!=0){
+            log.error("远程保存spu积分信息失败");
+        }
+
         //保存spu对应的所有的sku信息
         //sku基本信息
         List<Skus> skuses = vo.getSkus();
@@ -114,7 +130,10 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                     entity.setDefaultImg(img.getDefaultImg());
                     return entity;
                 }).collect(Collectors.toList());
+                //TODO 没有图片路径的无需保存
                 skuImagesService.saveBatch(imagesEntities);
+
+
                 List<Attr> attrs = item.getAttr();
                 List<SkuSaleAttrValueEntity> skuSaleAttrValueEntities = attrs.stream().map(items -> {
                     SkuSaleAttrValueEntity skuSaleAttrValueEntity = new SkuSaleAttrValueEntity();
@@ -123,6 +142,14 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                     return skuSaleAttrValueEntity;
                 }).collect(Collectors.toList());
                 skuSaleAttrValueService.saveBatch(skuSaleAttrValueEntities);
+
+                SkuReductionTo skuReductionTo = new SkuReductionTo();
+                BeanUtils.copyProperties(item,skuReductionTo);
+                skuReductionTo.setSkuId(skuId);
+                R r1 = couponFeignService.saveSkuReduction(skuReductionTo);
+                if(r1.getCode()!=0){
+                    log.error("远程保存spu积分信息失败");
+                }
             });
 
         }
@@ -130,6 +157,7 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         //sku图片信息
         //sku销售属性信息
         //sku优惠满减信息
+
 
     }
 

@@ -1,5 +1,6 @@
 package com.xunqi.gulimall.product.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -9,7 +10,7 @@ import lombok.Data;
 
 /**
  * spu信息介绍
- * 
+ *
  * @author perfectblue
  * @email 1608306542@qq.com
  * @date 2024-11-30 12:04:45
@@ -22,7 +23,8 @@ public class SpuInfoDescEntity implements Serializable {
 	/**
 	 * 商品id
 	 */
-	@TableId
+	//设置非自增主键
+	@TableId(type = IdType.INPUT)
 	private Long spuId;
 	/**
 	 * 商品介绍
