@@ -13,6 +13,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import com.xunqi.gulimall.product.dao.SpuInfoDao;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 
 @Service("spuInfoService")
@@ -129,6 +131,8 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                     entity.setImgUrl(img.getImgUrl());
                     entity.setDefaultImg(img.getDefaultImg());
                     return entity;
+                }).filter(entity->{
+                    return !StringUtils.isEmpty(entity.getImgUrl());
                 }).collect(Collectors.toList());
                 //TODO 没有图片路径的无需保存
                 skuImagesService.saveBatch(imagesEntities);
@@ -146,10 +150,13 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                 SkuReductionTo skuReductionTo = new SkuReductionTo();
                 BeanUtils.copyProperties(item,skuReductionTo);
                 skuReductionTo.setSkuId(skuId);
-                R r1 = couponFeignService.saveSkuReduction(skuReductionTo);
-                if(r1.getCode()!=0){
-                    log.error("远程保存spu积分信息失败");
+                if(skuReductionTo.getFullCount()>0||skuReductionTo.getFullPrice().compareTo(new BigDecimal(0))==1){
+                    R r1 = couponFeignService.saveSkuReduction(skuReductionTo);
+                    if(r1.getCode()!=0){
+                        log.error("远程保存spu积分信息失败");
+                    }
                 }
+
             });
 
         }
