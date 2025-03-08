@@ -1,11 +1,14 @@
 package com.xunqi.gulimall.product.controller;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.R;
 //import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.xunqi.gulimall.product.entity.ProductAttrValueEntity;
+import com.xunqi.gulimall.product.service.ProductAttrValueService;
 import com.xunqi.gulimall.product.vo.AttrGroupRelationVo;
 import com.xunqi.gulimall.product.vo.AttrRespVo;
 import com.xunqi.gulimall.product.vo.AttrVo;
@@ -30,6 +33,17 @@ import com.xunqi.gulimall.product.service.AttrService;
 public class AttrController {
     @Autowired
     private AttrService attrService;
+    @Autowired
+    ProductAttrValueService productAttrValueService;
+
+    /**
+
+     */
+    @GetMapping("/{attrType}/list/{spuId}")
+    public R baseAttrlistforspu(@PathVariable Long spuId){
+        List<ProductAttrValueEntity> entities = productAttrValueService.baseAttrlistforspu(spuId);
+        return R.ok().put("data",entities);
+    }
 
     /**
      * 商品信息查询
@@ -89,6 +103,15 @@ public class AttrController {
 //    @RequiresPermissions("product:attr:update")
     public R update(@RequestBody AttrVo attr){
 		attrService.updateAttr(attr);
+
+        return R.ok();
+    }
+
+    @RequestMapping("/update/{spuId}")
+//    @RequiresPermissions("product:attr:update")
+    public R updateSpuAttr(@PathVariable("spuId") Long spuId,
+                    @RequestBody List<ProductAttrValueEntity> entities){
+        productAttrValueService.updateSpuAttr(spuId,entities);
 
         return R.ok();
     }
