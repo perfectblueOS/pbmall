@@ -1,5 +1,8 @@
 package com.xunqi.gulimall.product.service.impl;
 
+import com.alibaba.fastjson.TypeReference;
+import com.xunqi.common.es.SkuEsModel;
+import com.xunqi.common.to.SkuHasStockVo;
 import com.xunqi.common.to.SkuReductionTo;
 import com.xunqi.common.to.SpuBoundTo;
 import com.xunqi.common.utils.PageUtils;
@@ -7,6 +10,7 @@ import com.xunqi.common.utils.Query;
 import com.xunqi.common.utils.R;
 import com.xunqi.gulimall.product.entity.*;
 import com.xunqi.gulimall.product.feign.CouponFeignService;
+import com.xunqi.gulimall.product.feign.WareFeignService;
 import com.xunqi.gulimall.product.service.*;
 import com.xunqi.gulimall.product.vo.*;
 import org.springframework.beans.BeanUtils;
@@ -14,9 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -49,6 +51,12 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     SkuSaleAttrValueService skuSaleAttrValueService;
     @Autowired
     CouponFeignService couponFeignService;
+    @Autowired
+    BrandService brandService;
+    @Autowired
+    CategoryService categoryService;
+    @Autowired
+    private WareFeignService wareFeignService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -204,6 +212,61 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         );
 
         return new PageUtils(page);
+    }
+
+    /**
+     * 商品上架
+     * @param spuId
+     */
+    @Override
+    public void up(Long spuId) {
+        //组装需要的数据
+        SkuEsModel skuEsModel = new SkuEsModel();
+        List<SkuEsModel> skuEsModels = new ArrayList<>();
+        List<SkuInfoEntity> skuInfoEntities = skuInfoService.getSkusBySpuId(spuId);
+        List<Long> skuIdList = skuInfoEntities.stream().map(SkuInfoEntity::getSkuId).collect(Collectors.toList());
+        List<ProductAttrValueEntity> baseAttrlistforspu = productAttrValueService.baseAttrlistforspu(spuId);
+
+        List<Long> collect = baseAttrlistforspu.stream().map(attr -> {
+            return attr.getAttrId();
+        }).collect(Collectors.toList());
+
+        List<Long> searchAttrIds = attrService.selectSearchAttrs(collect);
+        Set<Long> idSet = new HashSet<>(searchAttrIds);
+        List<SkuEsModel.Attrs> attrs = new ArrayList<>();
+        List<SkuEsModel.Attrs> collect1 = baseAttrlistforspu.stream().filter(item -> {
+            return idSet.contains(item.getAttrId());
+        }).map(item->{
+            SkuEsModel.Attrs attrs1 = new SkuEsModel.Attrs();
+            BeanUtils.copyProperties(item,attrs1);
+            return attrs1;
+        }).collect(Collectors.toList());
+
+        R skuHasStock = wareFeignService.getSkuHasStock(skuIdList);
+        TypeReference<List<SkuHasStockVo>> typeReference = new TypeReference<List<SkuHasStockVo>>(){};
+        Map<Long, Boolean> stockMap = skuHasStock.getData(typeReference).stream().collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
+
+        skuInfoEntities.stream().map(sku-> {
+            SkuEsModel esModel = new SkuEsModel();
+            BeanUtils.copyProperties(sku,esModel);
+            esModel.setSkuPrice(sku.getPrice());
+            esModel.setSkuImg(sku.getSkuDefaultImg());
+
+
+            esModel.setHasStock(stockMap.get(sku.getSkuId()));
+            //热度评分
+            esModel.setHotScore(0L);
+
+            BrandEntity brand = brandService.getById(esModel.getBrandId());
+            esModel.setBrandName(brand.getName());
+            esModel.setBrandImg(brand.getLogo());
+
+            CategoryEntity categoryEntity = categoryService.getById(esModel.getCatalogId());
+            esModel.setCatalogName(categoryEntity.getName());
+            esModel.setAttrs(collect1);
+            return esModel;
+        }).collect(Collectors.toList());
+
     }
 
 

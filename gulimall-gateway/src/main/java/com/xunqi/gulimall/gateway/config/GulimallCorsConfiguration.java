@@ -8,7 +8,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 @Configuration
 public class GulimallCorsConfiguration {
     /**
-     * 配置跨域过滤器
+     *TODO 配置跨域过滤器
      *
      * 该方法用于创建和配置CorsWebFilter，以处理跨域请求
      * 跨域资源共享（CORS）配置是现代Web服务中常见需求，特别是在单页应用（SPA）与后端服务交互时

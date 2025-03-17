@@ -7,8 +7,6 @@ autoDetectedPackages:
 - com.xunqi.common.valid
 - com.xunqi.common.vo
 - com.xunqi.common.xss
-- com.xunqi.gulimall.auth
-- com.xunqi.gulimall.cart
 - com.xunqi.gulimall.coupon
 - com.xunqi.gulimall.gateway
 - com.xunqi.gulimall.gulimallware
@@ -16,12 +14,8 @@ autoDetectedPackages:
 - com.xunqi.gulimall.order
 - com.xunqi.gulimall.product
 - com.xunqi.gulimall.search
-- com.xunqi.gulimall.seckill
-- com.xunqi.gulimall.ssoclient
-- com.xunqi.gulimall.ssoserver
 - com.xunqi.gulimall.thirdparty
 - com.xunqi.gulimall.ware
-- io.renren
 enableAutoDetect: true
 ignoreSameClassCall: null
 ignoreSamePackageCall: null
