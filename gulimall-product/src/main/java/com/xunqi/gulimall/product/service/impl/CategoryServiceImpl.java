@@ -3,6 +3,7 @@ package com.xunqi.gulimall.product.service.impl;
 import com.xunqi.common.utils.PageUtils;
 import com.xunqi.common.utils.Query;
 import com.xunqi.gulimall.product.service.CategoryBrandRelationService;
+import com.xunqi.gulimall.product.vo.Catelog2Vo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -87,6 +89,40 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     public void updateCascade(CategoryEntity category) {
         this.updateById(category);
         categoryBrandRelationService.updateCategory(category.getCatId(),category.getName());
+    }
+
+    @Override
+    public List<CategoryEntity> getLevel1Categories() {
+        return baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parend_cid",0));
+    }
+
+    @Override
+    public Map<String, List<Catelog2Vo>> getCatalogJson() {
+        //查所有一级分类
+        List<CategoryEntity> level1Categories = getLevel1Categories();
+        Map<String, List<Catelog2Vo>> collect2 = level1Categories.stream().collect(Collectors.toMap(k -> k.getCatId().toString(), v -> {
+            //查二级分类
+            List<CategoryEntity> entities = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", v.getCatId()));
+            List<Catelog2Vo> collect = null;
+            if (entities != null) {
+
+                collect = entities.stream().map(item -> {
+                    Catelog2Vo catelog2Vo = new Catelog2Vo(v.getCatId().toString(), null, item.getCatId().toString(), item.getName());
+                    List<CategoryEntity> entities3 = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", item.getCatId()));
+                    if (entities3 != null) {
+                        List<Catelog2Vo.Category3Vo> collect1 = entities3.stream().map(l3 -> {
+                            Catelog2Vo.Category3Vo category3Vo = new Catelog2Vo.Category3Vo(item.getCatId().toString(), l3.getCatId().toString(), l3.getName());
+                            return category3Vo;
+                        }).collect(Collectors.toList());
+                        catelog2Vo.setCatalog3List(collect1);
+
+                    }
+                    return catelog2Vo;
+                }).collect(Collectors.toList());
+            }
+            return collect;
+        }));
+        return collect2;
     }
 
     /**

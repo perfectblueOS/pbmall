@@ -1,6 +1,7 @@
 package com.xunqi.gulimall.product.service.impl;
 
 import com.alibaba.fastjson.TypeReference;
+import com.xunqi.common.constant.ProductConstant;
 import com.xunqi.common.es.SkuEsModel;
 import com.xunqi.common.to.SkuHasStockVo;
 import com.xunqi.common.to.SkuReductionTo;
@@ -10,6 +11,7 @@ import com.xunqi.common.utils.Query;
 import com.xunqi.common.utils.R;
 import com.xunqi.gulimall.product.entity.*;
 import com.xunqi.gulimall.product.feign.CouponFeignService;
+import com.xunqi.gulimall.product.feign.SearchFeignService;
 import com.xunqi.gulimall.product.feign.WareFeignService;
 import com.xunqi.gulimall.product.service.*;
 import com.xunqi.gulimall.product.vo.*;
@@ -57,6 +59,8 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     CategoryService categoryService;
     @Autowired
     private WareFeignService wareFeignService;
+    @Autowired
+    private SearchFeignService searchFeignService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -241,19 +245,29 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             BeanUtils.copyProperties(item,attrs1);
             return attrs1;
         }).collect(Collectors.toList());
+        Map<Long,Boolean> stockMap = null;
+        try{
+            R skuHasStock = wareFeignService.getSkuHasStock(skuIdList);
+            TypeReference<List<SkuHasStockVo>> typeReference = new TypeReference<List<SkuHasStockVo>>(){};
+            stockMap = skuHasStock.getData(typeReference).stream().collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
+        }
+        catch (Exception e){
+            log.error("库存服务查询异常，原因{}",e);
+        }
 
-        R skuHasStock = wareFeignService.getSkuHasStock(skuIdList);
-        TypeReference<List<SkuHasStockVo>> typeReference = new TypeReference<List<SkuHasStockVo>>(){};
-        Map<Long, Boolean> stockMap = skuHasStock.getData(typeReference).stream().collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
 
-        skuInfoEntities.stream().map(sku-> {
+        Map<Long, Boolean> finalStockMap = stockMap;
+        List<SkuEsModel> esModels = skuInfoEntities.stream().map(sku -> {
             SkuEsModel esModel = new SkuEsModel();
-            BeanUtils.copyProperties(sku,esModel);
+            BeanUtils.copyProperties(sku, esModel);
             esModel.setSkuPrice(sku.getPrice());
             esModel.setSkuImg(sku.getSkuDefaultImg());
+            if (finalStockMap == null) {
+                esModel.setHasStock(true);
+            } else {
+                esModel.setHasStock(finalStockMap.get(sku.getSkuId()));
+            }
 
-
-            esModel.setHasStock(stockMap.get(sku.getSkuId()));
             //热度评分
             esModel.setHotScore(0L);
 
@@ -266,6 +280,14 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             esModel.setAttrs(collect1);
             return esModel;
         }).collect(Collectors.toList());
+        R r = searchFeignService.productStatusUp(esModels);
+        if(r.getCode() == 0){
+            //远程调用成功
+            this.baseMapper.updateSpuStatus(spuId, ProductConstant.ProductStatusEnum.SPU_UP);
+        }
+        else{
+
+        }
 
     }
 
