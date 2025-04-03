@@ -59,7 +59,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  */
 
 //@EnableRedisHttpSession     //开启springsession
-//@EnableCaching      //开启缓存功能
+@EnableCaching      //开启缓存功能
 @EnableFeignClients(basePackages = "com.xunqi.gulimall.product.feign")
 @EnableDiscoveryClient
 @MapperScan("com.xunqi.gulimall.product.dao")
